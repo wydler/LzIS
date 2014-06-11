@@ -10,6 +10,8 @@
 #include <map>
 #include <unordered_set>
 
+#include <assert.h>
+
 
 using namespace Model::Net;
 
@@ -135,26 +137,24 @@ void PulseDistributor::step()
 			std::cerr << "found " << paths.size() << " paths:\n";
 			for( unsigned int i = 0; i<paths.size(); i++ )
 			{
-				std::cerr << "path " << i << ":\n";
+				std::cerr << "\t" << "path " << i << ":\n";
 				for( const PulseLink * l : paths[i] )
-				std::cerr << l << "\n";
+					std::cerr << "\t\t" << l << "\n";
 			}
 
 			// pick a random path to the provider's node
 			std::vector< const PulseLink * > path = paths[ rand() % paths.size() ];
-			if( path.empty() )
-				break; // TODO: empty path - should never happen - handle differently?
+			assert( !path.empty() ); // empty path - should never happen
 
 			// retrieve provider for this node
 			auto providerIt = availableProvidersMap.find( path[0]->from );
-			if( providerIt == availableProvidersMap.end() )
-				break; // TODO: got a node not in the list of available providers - should never happen - handle differently?
+			assert( providerIt != availableProvidersMap.end() ); // got a node not in the list of available providers - should never happen
 			APulseProvider * provider = providerIt->second;
 
 			// pulse all links to this node
 			for( const PulseLink * link : path )
 			{
-				const_cast<PulseLink *>(link)->pulse = true;
+				const_cast< PulseLink * >(link)->pulse = true;
 			}
 
 			// transfer pulse

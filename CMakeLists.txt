@@ -8,7 +8,6 @@ add_executable( ${EXECUTABLE_NAME}
 	src/main.cpp
 	src/Model/Updater.cpp
 	src/Model/IntervalStepUpdater.cpp
-	src/Model/Net/PulseNodeLinker.cpp
 	src/Model/Net/PulseDistributor.cpp
 	src/Model/Station/Hub.cpp
 	src/Model/Station/SolarPlant.cpp

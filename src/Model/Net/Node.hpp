@@ -13,10 +13,22 @@ namespace Model
 		class Node
 		{
 		public:
-			static void setLink( TNode * source, TNode * other, TLink * link )
+			static bool setLink( TNode * source, TNode * other, TLink * link )
 			{
+				bool isLinked = source->getOutLink( other );
+				if( link ) // if linking
+				{
+					if( isLinked )
+						return false;
+				}
+				else
+				{
+					if( !isLinked )
+						return false;
+				}
 				source->setOutLink( other, link );
 				other->setInLink( source, link );
+				return true;
 			}
 
 			const std::map< const TNode *, TLink * > & getOutLinks() const

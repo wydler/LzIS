@@ -11,8 +11,8 @@ namespace Model
 		{
 		public:
 			virtual PulseNode * getNode() = 0;
-			const PulseNode * getNode() const
-				{ return this->getNode(); }
+			const PulseNode * getConstNode() const
+				{ return const_cast<APulseNodeActor*>(this)->getNode(); }
 		};
 	}
 }

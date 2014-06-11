@@ -1,8 +1,12 @@
 #include <iostream>
 #include <typeinfo>
+#include <set>
+
 #include <math.h>
+
 #include <glm/vec2.hpp>
 #include <glm/geometric.hpp>
+
 #include <SFML/Graphics.hpp>
 
 #include "Model/Updater.hpp"
@@ -23,7 +27,8 @@ enum MouseMode
 	SOLARPLANT,
 	PHASER,
 	HUB,
-	LINK
+	LINK,
+	UNLINK
 };
 
 static const int SIZE_X = 600;
@@ -41,10 +46,10 @@ View::SFML::PhaserRenderer * phaserRenderer;
 View::SFML::HubRenderer * hubRenderer;
 View::SFML::PulseLinkRenderer * pulseLinkRenderer;
 
-std::vector< Model::SolarPlant * > solarPlants;
-std::vector< Model::Phaser * > phasers;
-std::vector< Model::Hub * > hubs;
-std::vector< Model::Net::PulseLink * > links;
+std::set< Model::SolarPlant * > solarPlants;
+std::set< Model::Phaser * > phasers;
+std::set< Model::Hub * > hubs;
+std::set< Model::Net::PulseLink * > links;
 
 
 template< typename T >
@@ -99,7 +104,7 @@ static void click( const glm::vec2 & pos )
 	{
 		Model::SolarPlant * m = new Model::SolarPlant;
 		m->setPosition( pos );
-		solarPlants.push_back( m );
+		solarPlants.insert( m );
 		updater->addUpdateable( m );
 		solarPlantRenderer->addModel( m );
 		pulseDistributor->addProvider( m );
@@ -109,7 +114,7 @@ static void click( const glm::vec2 & pos )
 	{
 		Model::Phaser * m = new Model::Phaser;
 		m->setPosition( pos );
-		phasers.push_back( m );
+		phasers.insert( m );
 		updater->addUpdateable( m );
 		phaserRenderer->addModel( m );
 		pulseDistributor->addConsumer( m );
@@ -119,7 +124,7 @@ static void click( const glm::vec2 & pos )
 	{
 		Model::Hub * m = new Model::Hub;
 		m->setPosition( pos );
-		hubs.push_back( m );
+		hubs.insert( m );
 		updater->addUpdateable( m );
 		hubRenderer->addModel( m );
 		pulseDistributor->addProvider( m );
@@ -139,49 +144,82 @@ static Model::Net::APulseNodeActor * linkSink = nullptr;
 
 static void dragStart( const glm::vec2 & from )
 {
-	if( mouseMode != LINK )
+	switch( mouseMode )
 	{
-		if( !draggedObject )
-			draggedObject = getAt<Model::APositionable2D>( from );
-	}
-	else
-	{
-		linkSource = getAt<Model::Net::APulseNodeActor>( from );
+		case SOLARPLANT:
+		case PHASER:
+		case HUB:
+			if( !draggedObject )
+				draggedObject = getAt<Model::APositionable2D>( from );
+			break;
+		case LINK:
+		case UNLINK:
+			linkSource = getAt<Model::Net::APulseNodeActor>( from );
+			break;
 	}
 }
 
 
 static void drag( const glm::vec2 & to )
 {
-	if( mouseMode != LINK )
+	switch( mouseMode )
 	{
-		if( draggedObject )
-		{
-			draggedObject->setPosition( to );
-		}
+		case SOLARPLANT:
+		case PHASER:
+		case HUB:
+			if( draggedObject )
+			{
+				draggedObject->setPosition( to );
+			}
+			break;
+		default:
+			break;
 	}
 }
 
 
 static void dragStop( const glm::vec2 & to )
 {
-	if( mouseMode != LINK )
+	switch( mouseMode )
 	{
-		if( draggedObject )
-		{
-			draggedObject->setPosition( to );
-			draggedObject = nullptr;
-		}
-	}
-	else
-	{
-		linkSink = getAt<Model::Net::APulseNodeActor>( to );
-		if( !linkSource || !linkSink )
-			return;
-		Model::Net::PulseLink * link = new Model::Net::PulseLink;
-		pulseLinkRenderer->addModel( link );
-		links.push_back( link );
-		Model::Net::PulseNode::setLink( linkSource->getNode(), linkSink->getNode(), link );
+		case SOLARPLANT:
+		case PHASER:
+		case HUB:
+			if( draggedObject )
+			{
+				draggedObject->setPosition( to );
+				draggedObject = nullptr;
+			}
+			break;
+		case LINK:
+			{
+				linkSink = getAt<Model::Net::APulseNodeActor>( to );
+				if( !linkSource || !linkSink )
+					return;
+				Model::Net::PulseLink * link = new Model::Net::PulseLink;
+				if( Model::Net::PulseNode::setLink( linkSource->getNode(), linkSink->getNode(), link ) )
+				{
+					pulseLinkRenderer->addModel( link );
+					links.insert( link );
+				}
+			}
+			break;
+		case UNLINK:
+			{
+				linkSink = getAt<Model::Net::APulseNodeActor>( to );
+				if( !linkSource || !linkSink )
+					return;
+				Model::Net::PulseLink * link = const_cast< Model::Net::PulseLink * >( linkSource->getNode()->getOutLink( linkSink->getNode() ) );
+				if( link )
+				{
+					if( Model::Net::PulseNode::setLink( linkSource->getNode(), linkSink->getNode(), nullptr ) )
+					{
+						pulseLinkRenderer->removeModel( link );
+						links.erase( link );
+					}
+				}
+			}
+			break;
 	}
 }
 
@@ -240,6 +278,9 @@ int main( int argc, char ** argv )
 						break;
 					case sf::Keyboard::Num4:
 						mouseMode = LINK;
+						break;
+					case sf::Keyboard::Num5:
+						mouseMode = UNLINK;
 						break;
 					default:
 						break;
