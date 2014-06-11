@@ -13,8 +13,10 @@ add_executable( ${EXECUTABLE_NAME}
 	src/Model/Station/Hub.cpp
 	src/Model/Station/SolarPlant.cpp
 	src/Model/Station/Phaser.cpp
+	src/View/AssetManager.cpp
 	src/View/SFML/SolarPlantRenderer.cpp
 	src/View/SFML/PhaserRenderer.cpp
+	src/View/SFML/HubRenderer.cpp
 	src/View/SFML/PulseLinkRenderer.cpp
 )
 

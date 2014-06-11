@@ -1,5 +1,6 @@
 #include <iostream>
 #include <typeinfo>
+#include <math.h>
 #include <glm/vec2.hpp>
 #include <glm/geometric.hpp>
 #include <SFML/Graphics.hpp>
@@ -13,6 +14,7 @@
 #include "Model/Net/PulseNode.hpp"
 #include "View/SFML/SolarPlantRenderer.hpp"
 #include "View/SFML/PhaserRenderer.hpp"
+#include "View/SFML/HubRenderer.hpp"
 #include "View/SFML/PulseLinkRenderer.hpp"
 
 
@@ -24,6 +26,11 @@ enum MouseMode
 	LINK
 };
 
+static const int SIZE_X = 600;
+static const int SIZE_Y = 600;
+static const int FIELDS_X = 16;
+static const int FIELDS_Y = 16;
+
 MouseMode mouseMode = SOLARPLANT;
 
 Model::Updater * updater;
@@ -31,6 +38,7 @@ Model::IntervalStepUpdater * intervalStepUpdater;
 Model::Net::PulseDistributor * pulseDistributor;
 View::SFML::SolarPlantRenderer * solarPlantRenderer;
 View::SFML::PhaserRenderer * phaserRenderer;
+View::SFML::HubRenderer * hubRenderer;
 View::SFML::PulseLinkRenderer * pulseLinkRenderer;
 
 std::vector< Model::SolarPlant * > solarPlants;
@@ -60,7 +68,6 @@ static T * getAt( const glm::vec2 & pos )
 		)
 			return i;
 	}
-/*
 	for( auto i : hubs )
 	{
 		if( pos.x > i->getMinCorner().x
@@ -70,7 +77,7 @@ static T * getAt( const glm::vec2 & pos )
 		)
 			return i;
 	}
-*/
+
 	return nullptr;
 }
 
@@ -105,6 +112,17 @@ static void click( const glm::vec2 & pos )
 		phasers.push_back( m );
 		updater->addUpdateable( m );
 		phaserRenderer->addModel( m );
+		pulseDistributor->addConsumer( m );
+		break;
+	}
+	case HUB:
+	{
+		Model::Hub * m = new Model::Hub;
+		m->setPosition( pos );
+		hubs.push_back( m );
+		updater->addUpdateable( m );
+		hubRenderer->addModel( m );
+		pulseDistributor->addProvider( m );
 		pulseDistributor->addConsumer( m );
 		break;
 	}
@@ -170,13 +188,13 @@ static void dragStop( const glm::vec2 & to )
 
 int main( int argc, char ** argv )
 {
-	sf::RenderWindow window( sf::VideoMode(800, 600), "LzIS" );
+	sf::RenderWindow window( sf::VideoMode( SIZE_X, SIZE_Y ), "LzIS" );
 	window.setVerticalSyncEnabled(true);
 
 	pulseDistributor = new Model::Net::PulseDistributor;
 
 	intervalStepUpdater = new Model::IntervalStepUpdater;
-	intervalStepUpdater->setInterval( 0.2 );
+	intervalStepUpdater->setInterval( 0.3 );
 	intervalStepUpdater->addStepUpdateable( pulseDistributor );
 
 	updater = new Model::Updater;
@@ -184,12 +202,17 @@ int main( int argc, char ** argv )
 
 	solarPlantRenderer = new View::SFML::SolarPlantRenderer( window );
 	phaserRenderer = new View::SFML::PhaserRenderer( window );
+	hubRenderer = new View::SFML::HubRenderer( window );
 	pulseLinkRenderer = new View::SFML::PulseLinkRenderer( window );
 
 	sf::Clock clock;
 	while( window.isOpen() )
 	{
 		sf::Time elapsed = clock.restart();
+
+		updater->update( elapsed.asSeconds() );
+
+		window.clear( sf::Color::Black );
 
 		sf::Event event;
 		while( window.pollEvent(event) )
@@ -275,11 +298,8 @@ int main( int argc, char ** argv )
 			}
 		}
 
-		updater->update( elapsed.asSeconds() );
-
-		window.clear( sf::Color::Black );
-
 		pulseLinkRenderer->draw();
+		hubRenderer->draw();
 		solarPlantRenderer->draw();
 		phaserRenderer->draw();
 

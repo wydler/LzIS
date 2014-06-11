@@ -10,7 +10,7 @@ namespace Model
 	namespace Net
 	{
 		class PulseNode;
-		class APulseConsumer : public APulseNodeActor
+		class APulseConsumer : virtual public APulseNodeActor
 		{
 		public:
 			virtual bool isPulseNeeded() const = 0;

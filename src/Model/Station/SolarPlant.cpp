@@ -22,5 +22,10 @@ SolarPlant::~SolarPlant()
 
 void SolarPlant::update( double delta )
 {
-
+	if( timer < 0 ) {
+		this->addPulses(1);
+		timer = 5.0;
+	} else {
+		timer -= delta;
+	}
 }

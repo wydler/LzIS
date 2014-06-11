@@ -33,6 +33,13 @@ namespace Model
 		virtual glm::vec2 getMinCorner() const { return this->position - glm::vec2( 30, 30 ); }
 
 		void setPulses( unsigned int pulses ) { this->pulses = pulses; }
+		unsigned int getPulses() const { return this->pulses; }
+		void addPulses( unsigned int pulses )
+		{
+			if( this->pulses < 10 ) {
+				this->pulses += pulses;
+			}
+		}
 
 		SolarPlant();
 		virtual ~SolarPlant();
@@ -41,6 +48,7 @@ namespace Model
 		Net::PulseNode * node = nullptr;
 		unsigned int pulses = 0;
 		glm::vec2 position = glm::vec2(0,0);
+		double timer = 5.0;
 	};
 }
 
