@@ -1,2 +1,4 @@
 build/
 .kdev4/
+/CMakeLists.txt.user
+/CMakeLists.txt.user.2.5pre1
