@@ -14,11 +14,15 @@
 #include "Model/Station/SolarPlant.hpp"
 #include "Model/Station/Phaser.hpp"
 #include "Model/Station/Hub.hpp"
+#include "Model/Unit/Tank.hpp"
 #include "Model/Net/PulseDistributor.hpp"
 #include "Model/Net/PulseNode.hpp"
+#include "View/SFML/SceneManager.hpp"
+#include "View/SFML/AssetManager.hpp"
 #include "View/SFML/SolarPlantRenderer.hpp"
 #include "View/SFML/PhaserRenderer.hpp"
 #include "View/SFML/HubRenderer.hpp"
+#include "View/SFML/TankRenderer.hpp"
 #include "View/SFML/PulseLinkRenderer.hpp"
 
 
@@ -27,6 +31,7 @@ enum MouseMode
 	SOLARPLANT,
 	PHASER,
 	HUB,
+	TANK,
 	LINK,
 	UNLINK
 };
@@ -41,6 +46,8 @@ MouseMode mouseMode = SOLARPLANT;
 Model::Updater * updater;
 Model::IntervalStepUpdater * intervalStepUpdater;
 Model::Net::PulseDistributor * pulseDistributor;
+
+View::SFML::SceneManager * sceneManager;
 View::SFML::SolarPlantRenderer * solarPlantRenderer;
 View::SFML::PhaserRenderer * phaserRenderer;
 View::SFML::HubRenderer * hubRenderer;
@@ -49,6 +56,7 @@ View::SFML::PulseLinkRenderer * pulseLinkRenderer;
 std::set< Model::SolarPlant * > solarPlants;
 std::set< Model::Phaser * > phasers;
 std::set< Model::Hub * > hubs;
+std::set< Model::Tank * > tanks;
 std::set< Model::Net::PulseLink * > links;
 
 
@@ -116,6 +124,7 @@ static void click( const glm::vec2 & pos )
 		m->setPosition( pos );
 		phasers.insert( m );
 		updater->addUpdateable( m );
+        intervalStepUpdater->addStepUpdateable( m );
 		phaserRenderer->addModel( m );
 		pulseDistributor->addConsumer( m );
 		break;
@@ -129,6 +138,16 @@ static void click( const glm::vec2 & pos )
 		hubRenderer->addModel( m );
 		pulseDistributor->addProvider( m );
 		pulseDistributor->addConsumer( m );
+		break;
+	}
+	case TANK:
+	{
+		Model::Tank * m = new Model::Tank;
+		m->setPosition( pos );
+		tanks.insert( m );
+		updater->addUpdateable( m );
+        sceneManager->getEnemies()->insert( m );
+        sceneManager->getTankRenderer()->addModel( m );
 		break;
 	}
 	default:
@@ -149,6 +168,7 @@ static void dragStart( const glm::vec2 & from )
 		case SOLARPLANT:
 		case PHASER:
 		case HUB:
+		case TANK:
 			if( !draggedObject )
 				draggedObject = getAt<Model::APositionable2D>( from );
 			break;
@@ -185,6 +205,7 @@ static void dragStop( const glm::vec2 & to )
 		case SOLARPLANT:
 		case PHASER:
 		case HUB:
+		case TANK:
 			if( draggedObject )
 			{
 				draggedObject->setPosition( to );
@@ -226,18 +247,30 @@ static void dragStop( const glm::vec2 & to )
 
 int main( int argc, char ** argv )
 {
-	sf::RenderWindow window( sf::VideoMode( SIZE_X, SIZE_Y ), "LzIS" );
+	sf::ContextSettings settings;
+	settings.antialiasingLevel = 8;
+	sf::RenderWindow window( sf::VideoMode( SIZE_X, SIZE_Y ), "LzIS", sf::Style::Default, settings );
 	window.setVerticalSyncEnabled(true);
+
+    sf::View gui;
+    gui.setSize( SIZE_X, SIZE_Y );
+    gui.setCenter( SIZE_X/2, SIZE_Y/2 );
+
+    sf::View world;
+    world.setSize( SIZE_X, SIZE_Y );
+    world.setCenter( SIZE_X/2, SIZE_Y/2 );
 
 	pulseDistributor = new Model::Net::PulseDistributor;
 
 	intervalStepUpdater = new Model::IntervalStepUpdater;
-	intervalStepUpdater->setInterval( 0.3 );
+    intervalStepUpdater->setInterval( 0.2 );
 	intervalStepUpdater->addStepUpdateable( pulseDistributor );
 
 	updater = new Model::Updater;
 	updater->addUpdateable( intervalStepUpdater );
 
+    sceneManager = View::SFML::SceneManager::instance();
+    sceneManager->setTankRenderer( new View::SFML::TankRenderer( window ) );
 	solarPlantRenderer = new View::SFML::SolarPlantRenderer( window );
 	phaserRenderer = new View::SFML::PhaserRenderer( window );
 	hubRenderer = new View::SFML::HubRenderer( window );
@@ -282,6 +315,21 @@ int main( int argc, char ** argv )
 					case sf::Keyboard::Num5:
 						mouseMode = UNLINK;
 						break;
+					case sf::Keyboard::Num9:
+						mouseMode = TANK;
+						break;
+                    case sf::Keyboard::Left:
+                        world.move( -10,   0 );
+                        break;
+                    case sf::Keyboard::Up:
+                        world.move(   0, -10 );
+                        break;
+                    case sf::Keyboard::Right:
+                        world.move(  10,   0 );
+                        break;
+                    case sf::Keyboard::Down:
+                        world.move(   0,  10 );
+                        break;
 					default:
 						break;
 					}
@@ -289,8 +337,16 @@ int main( int argc, char ** argv )
 					switch( event.mouseButton.button )
 					{
 					case sf::Mouse::Left:
-						lastMousePos = glm::vec2( event.mouseButton.x, event.mouseButton.y );
+                    {
+                        sf::Vector2f pos = window.mapPixelToCoords( sf::Vector2i( event.mouseButton.x, event.mouseButton.y ), world );
+                        lastMousePos = glm::vec2( pos.x, pos.y );
 						break;
+                    }
+                    case sf::Mouse::Right:
+                    {
+                        sf::Vector2f pos = window.mapPixelToCoords( sf::Vector2i( event.mouseButton.x, event.mouseButton.y ), world );
+                        std::cout << pos.x << " | " << pos.y << std::endl;
+                    }
 					default:
 						break;
 					}
@@ -299,7 +355,8 @@ int main( int argc, char ** argv )
 					{
 						if( sf::Mouse::isButtonPressed( sf::Mouse::Left ) )
 						{
-							glm::vec2 currentMousePos( event.mouseMove.x, event.mouseMove.y );
+                            sf::Vector2f pos = window.mapPixelToCoords( sf::Vector2i( event.mouseMove.x, event.mouseMove.y ), world );
+                            glm::vec2 currentMousePos( pos.x, pos.y );
 							if( !dragging )
 							{
 								if( glm::distance( currentMousePos, lastMousePos ) >= 5.0f )
@@ -318,7 +375,8 @@ int main( int argc, char ** argv )
 					{
 					case sf::Mouse::Left:
 						{
-							glm::vec2 currentMousePos( event.mouseButton.x, event.mouseButton.y );
+                            sf::Vector2f pos = window.mapPixelToCoords( sf::Vector2i( event.mouseButton.x, event.mouseButton.y ), world );
+                            glm::vec2 currentMousePos( pos.x, pos.y );
 							if( dragging )
 							{
 								dragStop( currentMousePos );
@@ -334,15 +392,73 @@ int main( int argc, char ** argv )
 						break;
 					}
 					break;
+                case sf::Event::MouseWheelMoved:
+                {
+                    if( event.mouseWheel.delta < 0 )
+                    {
+                        world.zoom( 1.05 );
+                    }
+                    else if( event.mouseWheel.delta > 0 )
+                    {
+                        world.zoom( 0.95 );
+                    }
+                    break;
+                }
 				default:
 					break;
 			}
 		}
 
+        window.setView( world );
+
+        sf::Vector2i pos = sf::Mouse::getPosition( window );
+        sf::Vector2f worldPos = window.mapPixelToCoords( pos );
+
+        sf::CircleShape hexagon( 20, 6 );
+        hexagon.setScale( 1, 1 );
+        hexagon.setOrigin( hexagon.getLocalBounds().width/2, hexagon.getLocalBounds().height/2 );
+        hexagon.setFillColor( sf::Color( 63, 63, 63 ) );
+        hexagon.setOutlineColor( sf::Color( 0, 0, 255, 255 ) );
+        hexagon.setOutlineThickness( 0 );
+
+        for( int i=0; i<16; i++ )
+        {
+            for( int j=0; j<16; j++ )
+            {
+                int offset = 0;
+                if( i%2 == 0)
+                    offset = 20;
+                hexagon.setPosition( j*hexagon.getLocalBounds().height+offset, i*hexagon.getLocalBounds().width );
+                window.draw( hexagon );
+            }
+        }
+        /*
+        for( int i=44; i<540; i+=hexagon.getLocalBounds().width+4 )
+        {
+            hexagon.setPosition( i, 58 );
+            window.draw( hexagon );
+        }
+        */
+
+        hexagon.setPosition( worldPos.x, worldPos.y );
+        hexagon.setFillColor( sf::Color( 0, 225, 255, 63 ) );
+        hexagon.setOutlineColor( sf::Color( 0, 225, 255, 255 ) );
+        hexagon.setOutlineThickness( 3.0 );
+        window.draw( hexagon );
+
 		pulseLinkRenderer->draw();
 		hubRenderer->draw();
 		solarPlantRenderer->draw();
 		phaserRenderer->draw();
+        sceneManager->getTankRenderer()->draw();
+
+        window.setView( gui );
+
+        sf::RectangleShape bg( sf::Vector2f( SIZE_X, 100 ) );
+        bg.setPosition( 0, SIZE_Y-100 );
+        bg.setFillColor( sf::Color( 0, 0, 0, 127 ) );
+
+        window.draw( bg );
 
 		window.display();
 	}

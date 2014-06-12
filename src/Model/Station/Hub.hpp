@@ -34,8 +34,8 @@ namespace Model
 		}
 		virtual glm::vec2 getPosition() const { return this->position; }
 		virtual void setPosition( const glm::vec2 & position ) { this->position = position; this->node->setPosition( position ); }
-		virtual glm::vec2 getMaxCorner() const { return this->position + glm::vec2( 30, 30 ); }
-		virtual glm::vec2 getMinCorner() const { return this->position - glm::vec2( 30, 30 ); }
+        virtual glm::vec2 getMaxCorner() const { return this->position + glm::vec2( 15, 15 ); }
+        virtual glm::vec2 getMinCorner() const { return this->position - glm::vec2( 15, 15 ); }
 
 		void setPulses( unsigned int pulses ) { this->pulses = pulses; }
 		unsigned int getPulses() const { return this->pulses; }

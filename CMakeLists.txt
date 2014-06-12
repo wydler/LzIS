@@ -3,6 +3,7 @@ project( LzIS )
 
 set( CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMakeModules" ${CMAKE_MODULE_PATH} )
 
+file( GLOB_RECURSE HEADERS "src/*.hpp" )
 set( EXECUTABLE_NAME "lzis" )
 add_executable( ${EXECUTABLE_NAME}
 	src/main.cpp
@@ -12,16 +13,20 @@ add_executable( ${EXECUTABLE_NAME}
 	src/Model/Station/Hub.cpp
 	src/Model/Station/SolarPlant.cpp
 	src/Model/Station/Phaser.cpp
-	src/View/AssetManager.cpp
+	src/Model/Unit/Tank.cpp
+        src/View/SFML/SceneManager.cpp
+	src/View/SFML/AssetManager.cpp
 	src/View/SFML/SolarPlantRenderer.cpp
 	src/View/SFML/PhaserRenderer.cpp
 	src/View/SFML/HubRenderer.cpp
 	src/View/SFML/PulseLinkRenderer.cpp
+	src/View/SFML/TankRenderer.cpp
+        ${HEADERS}
 )
 
 # configure compiler for c++11 etc.
 if( "${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU" )
-	set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -std=c++11" )
+        set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -std=c++11 -std=c++0x" )
 endif()
 
 # wrap the main function for those OSes
