@@ -14,13 +14,15 @@ add_executable( ${EXECUTABLE_NAME}
 	src/Model/Station/SolarPlant.cpp
 	src/Model/Station/Phaser.cpp
 	src/Model/Unit/Tank.cpp
-        src/View/SFML/SceneManager.cpp
+	src/Model/Field/Grass.cpp
+	src/View/SFML/SceneManager.cpp
 	src/View/SFML/AssetManager.cpp
 	src/View/SFML/SolarPlantRenderer.cpp
 	src/View/SFML/PhaserRenderer.cpp
 	src/View/SFML/HubRenderer.cpp
 	src/View/SFML/PulseLinkRenderer.cpp
 	src/View/SFML/TankRenderer.cpp
+	src/View/SFML/FieldRenderer.cpp
         ${HEADERS}
 )
 

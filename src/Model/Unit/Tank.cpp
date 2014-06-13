@@ -27,8 +27,8 @@ void Tank::hit( const double damage )
 
     if( this->life <= 0 )
     {
-        View::SFML::SceneManager::instance()->getEnemies()->erase( this );
-        View::SFML::SceneManager::instance()->getTankRenderer()->removeModel( this );
+        View::SFML::SceneManager::instance()->getEnemies().erase( this );
+        View::SFML::SceneManager::instance()->getEnemyRenderer()->removeModel( this );
         this->state = LifeState::DEAD;
     }
 }

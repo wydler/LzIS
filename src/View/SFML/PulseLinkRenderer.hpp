@@ -12,14 +12,13 @@ namespace View
 {
 	namespace SFML
 	{
-		class PulseLinkRenderer : public AUnorderedRenderer< Model::Net::PulseLink >
+        class PulseLinkRenderer : public AUnorderedRenderer< Model::Net::PulseLink >, public sf::Drawable
 		{
 		public:
-			PulseLinkRenderer( sf::RenderWindow & window ) : window(window) {}
+            PulseLinkRenderer() {}
 			virtual ~PulseLinkRenderer() {}
-			virtual void draw() const override;
+            virtual void draw( sf::RenderTarget & target, sf::RenderStates states ) const override;
 		private:
-			sf::RenderWindow & window;
 		};
 	}
 }

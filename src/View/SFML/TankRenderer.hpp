@@ -12,14 +12,13 @@ namespace View
 {
     namespace SFML
     {
-        class TankRenderer : public AUnorderedRenderer< Model::Tank >
+        class EnemyRenderer : public AUnorderedRenderer< Model::Tank >, public sf::Drawable
         {
         public:
-            TankRenderer( sf::RenderWindow & window ) : window(window) {}
-            virtual ~TankRenderer() {}
-            virtual void draw() const override;
+            EnemyRenderer() {}
+            virtual ~EnemyRenderer() {}
+            virtual void draw( sf::RenderTarget & target, sf::RenderStates states ) const override;
         private:
-            sf::RenderWindow & window;
         };
     }
 }

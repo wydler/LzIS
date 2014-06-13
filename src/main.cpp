@@ -17,13 +17,10 @@
 #include "Model/Unit/Tank.hpp"
 #include "Model/Net/PulseDistributor.hpp"
 #include "Model/Net/PulseNode.hpp"
+#include "Model/AField2D.hpp"
+#include "Model/Field/Grass.hpp"
 #include "View/SFML/SceneManager.hpp"
 #include "View/SFML/AssetManager.hpp"
-#include "View/SFML/SolarPlantRenderer.hpp"
-#include "View/SFML/PhaserRenderer.hpp"
-#include "View/SFML/HubRenderer.hpp"
-#include "View/SFML/TankRenderer.hpp"
-#include "View/SFML/PulseLinkRenderer.hpp"
 
 
 enum MouseMode
@@ -48,22 +45,16 @@ Model::IntervalStepUpdater * intervalStepUpdater;
 Model::Net::PulseDistributor * pulseDistributor;
 
 View::SFML::SceneManager * sceneManager;
-View::SFML::SolarPlantRenderer * solarPlantRenderer;
-View::SFML::PhaserRenderer * phaserRenderer;
-View::SFML::HubRenderer * hubRenderer;
-View::SFML::PulseLinkRenderer * pulseLinkRenderer;
 
-std::set< Model::SolarPlant * > solarPlants;
-std::set< Model::Phaser * > phasers;
-std::set< Model::Hub * > hubs;
-std::set< Model::Tank * > tanks;
-std::set< Model::Net::PulseLink * > links;
-
+static Model::AField2D * currentField = nullptr;
+static Model::APositionable2D * draggedObject = nullptr;
+static Model::Net::APulseNodeActor * linkSource = nullptr;
+static Model::Net::APulseNodeActor * linkSink = nullptr;
 
 template< typename T >
 static T * getAt( const glm::vec2 & pos )
 {
-	for( auto i : solarPlants )
+    for( auto i : sceneManager->getSolarPlants() )
 	{
 		if( pos.x > i->getMinCorner().x
 		 && pos.x < i->getMaxCorner().x
@@ -72,7 +63,7 @@ static T * getAt( const glm::vec2 & pos )
 		)
 			return i;
 	}
-	for( auto i : phasers )
+    for( auto i : sceneManager->getPhasers() )
 	{
 		if( pos.x > i->getMinCorner().x
 		 && pos.x < i->getMaxCorner().x
@@ -81,7 +72,7 @@ static T * getAt( const glm::vec2 & pos )
 		)
 			return i;
 	}
-	for( auto i : hubs )
+    for( auto i : sceneManager->getHubs() )
 	{
 		if( pos.x > i->getMinCorner().x
 		 && pos.x < i->getMaxCorner().x
@@ -97,6 +88,8 @@ static T * getAt( const glm::vec2 & pos )
 
 static void click( const glm::vec2 & pos )
 {
+    if( !currentField )
+        return;
 	Model::ABoundingBox2D * obj = getAt<Model::ABoundingBox2D>( pos );
 	if( obj )
 	{
@@ -111,31 +104,31 @@ static void click( const glm::vec2 & pos )
 	case SOLARPLANT:
 	{
 		Model::SolarPlant * m = new Model::SolarPlant;
-		m->setPosition( pos );
-		solarPlants.insert( m );
+        m->setPosition( currentField->getPosition() );
+        sceneManager->getSolarPlants().insert( m );
 		updater->addUpdateable( m );
-		solarPlantRenderer->addModel( m );
+        sceneManager->getSolarPlantRenderer()->addModel( m );
 		pulseDistributor->addProvider( m );
 		break;
 	}
 	case PHASER:
 	{
 		Model::Phaser * m = new Model::Phaser;
-		m->setPosition( pos );
-		phasers.insert( m );
+        m->setPosition( currentField->getPosition() );
+        sceneManager->getPhasers().insert( m );
 		updater->addUpdateable( m );
         intervalStepUpdater->addStepUpdateable( m );
-		phaserRenderer->addModel( m );
+        sceneManager->getPhaserRenderer()->addModel( m );
 		pulseDistributor->addConsumer( m );
 		break;
 	}
 	case HUB:
 	{
 		Model::Hub * m = new Model::Hub;
-		m->setPosition( pos );
-		hubs.insert( m );
+        m->setPosition( currentField->getPosition() );
+        sceneManager->getHubs().insert( m );
 		updater->addUpdateable( m );
-		hubRenderer->addModel( m );
+        sceneManager->getHubRenderer()->addModel( m );
 		pulseDistributor->addProvider( m );
 		pulseDistributor->addConsumer( m );
 		break;
@@ -143,22 +136,16 @@ static void click( const glm::vec2 & pos )
 	case TANK:
 	{
 		Model::Tank * m = new Model::Tank;
-		m->setPosition( pos );
-		tanks.insert( m );
+        m->setPosition( currentField->getPosition() );
 		updater->addUpdateable( m );
-        sceneManager->getEnemies()->insert( m );
-        sceneManager->getTankRenderer()->addModel( m );
+        sceneManager->getEnemies().insert( m );
+        sceneManager->getEnemyRenderer()->addModel( m );
 		break;
 	}
 	default:
 		break;
 	}
 }
-
-
-static Model::APositionable2D * draggedObject = nullptr;
-static Model::Net::APulseNodeActor * linkSource = nullptr;
-static Model::Net::APulseNodeActor * linkSink = nullptr;
 
 
 static void dragStart( const glm::vec2 & from )
@@ -220,8 +207,8 @@ static void dragStop( const glm::vec2 & to )
 				Model::Net::PulseLink * link = new Model::Net::PulseLink;
 				if( Model::Net::PulseNode::setLink( linkSource->getNode(), linkSink->getNode(), link ) )
 				{
-					pulseLinkRenderer->addModel( link );
-					links.insert( link );
+                    sceneManager->getPulseLinkRenderer()->addModel( link );
+                    sceneManager->getLinks().insert( link );
 				}
 			}
 			break;
@@ -235,8 +222,8 @@ static void dragStop( const glm::vec2 & to )
 				{
 					if( Model::Net::PulseNode::setLink( linkSource->getNode(), linkSink->getNode(), nullptr ) )
 					{
-						pulseLinkRenderer->removeModel( link );
-						links.erase( link );
+                        sceneManager->getPulseLinkRenderer()->removeModel( link );
+                        sceneManager->getLinks().erase( link );
 					}
 				}
 			}
@@ -270,11 +257,20 @@ int main( int argc, char ** argv )
 	updater->addUpdateable( intervalStepUpdater );
 
     sceneManager = View::SFML::SceneManager::instance();
-    sceneManager->setTankRenderer( new View::SFML::TankRenderer( window ) );
-	solarPlantRenderer = new View::SFML::SolarPlantRenderer( window );
-	phaserRenderer = new View::SFML::PhaserRenderer( window );
-	hubRenderer = new View::SFML::HubRenderer( window );
-	pulseLinkRenderer = new View::SFML::PulseLinkRenderer( window );
+
+    for( int i=0; i<16; i++ )
+    {
+        for( int j=0; j<16; j++ )
+        {
+            int offset = 0;
+            if( i%2 == 0)
+                offset = 20;
+            Model::Field::Grass * hex = new Model::Field::Grass();
+            hex->setPosition( glm::vec2( j*40+offset, i*34 ) );
+            sceneManager->getFields().insert( hex );
+            sceneManager->getFieldRenderer()->addModel( hex );
+        }
+    }
 
 	sf::Clock clock;
 	while( window.isOpen() )
@@ -353,9 +349,25 @@ int main( int argc, char ** argv )
 					break;
 				case sf::Event::MouseMoved:
 					{
+                        sf::Vector2f pos = window.mapPixelToCoords( sf::Vector2i( event.mouseMove.x, event.mouseMove.y ), world );
+
+                        Model::AField2D * field = sceneManager->getFieldAt( glm::vec2( pos.x, pos.y ) );
+                        if( field )
+                        {
+                            for( auto i: sceneManager->getNextFieldsTo( field, 1 ) )
+                            {
+                                i->setState( FieldState::ACTIVE );
+                            }
+                        }
+                        if( currentField )
+                            currentField->setState( FieldState::IDLE );
+                        if( field )
+                            field->setState( FieldState::HOVER );
+
+                        currentField = field;
+
 						if( sf::Mouse::isButtonPressed( sf::Mouse::Left ) )
 						{
-                            sf::Vector2f pos = window.mapPixelToCoords( sf::Vector2i( event.mouseMove.x, event.mouseMove.y ), world );
                             glm::vec2 currentMousePos( pos.x, pos.y );
 							if( !dragging )
 							{
@@ -411,54 +423,12 @@ int main( int argc, char ** argv )
 
         window.setView( world );
 
-        sf::Vector2i pos = sf::Mouse::getPosition( window );
-        sf::Vector2f worldPos = window.mapPixelToCoords( pos );
+        window.draw( *sceneManager );
 
-        sf::CircleShape hexagon( 20, 6 );
-        hexagon.setScale( 1, 1 );
-        hexagon.setOrigin( hexagon.getLocalBounds().width/2, hexagon.getLocalBounds().height/2 );
-        hexagon.setFillColor( sf::Color( 63, 63, 63 ) );
-        hexagon.setOutlineColor( sf::Color( 0, 0, 255, 255 ) );
-        hexagon.setOutlineThickness( 0 );
-
-        for( int i=0; i<16; i++ )
-        {
-            for( int j=0; j<16; j++ )
-            {
-                int offset = 0;
-                if( i%2 == 0)
-                    offset = 20;
-                hexagon.setPosition( j*hexagon.getLocalBounds().height+offset, i*hexagon.getLocalBounds().width );
-                window.draw( hexagon );
-            }
-        }
-        /*
-        for( int i=44; i<540; i+=hexagon.getLocalBounds().width+4 )
-        {
-            hexagon.setPosition( i, 58 );
-            window.draw( hexagon );
-        }
-        */
-
-        hexagon.setPosition( worldPos.x, worldPos.y );
-        hexagon.setFillColor( sf::Color( 0, 225, 255, 63 ) );
-        hexagon.setOutlineColor( sf::Color( 0, 225, 255, 255 ) );
-        hexagon.setOutlineThickness( 3.0 );
-        window.draw( hexagon );
-
-		pulseLinkRenderer->draw();
-		hubRenderer->draw();
-		solarPlantRenderer->draw();
-		phaserRenderer->draw();
-        sceneManager->getTankRenderer()->draw();
 
         window.setView( gui );
 
-        sf::RectangleShape bg( sf::Vector2f( SIZE_X, 100 ) );
-        bg.setPosition( 0, SIZE_Y-100 );
-        bg.setFillColor( sf::Color( 0, 0, 0, 127 ) );
-
-        window.draw( bg );
+        // TODO draw gui
 
 		window.display();
 	}

@@ -4,7 +4,12 @@
 
 #include <set>
 
+#include "SolarPlantRenderer.hpp"
+#include "PhaserRenderer.hpp"
+#include "HubRenderer.hpp"
 #include "TankRenderer.hpp"
+#include "PulseLinkRenderer.hpp"
+#include "FieldRenderer.hpp"
 #include "../ADrawable.hpp"
 #include "../../Model/ADestroyable.hpp"
 
@@ -13,7 +18,7 @@ namespace View
 {
     namespace SFML
     {
-        class SceneManager
+        class SceneManager : public sf::Drawable
         {
         public:
             static SceneManager * instance()
@@ -24,11 +29,30 @@ namespace View
                 return _instance;
             }
 
-            std::set< Model::ADestroyable * > * getEnemies() { return & this->enemies; }
+            virtual void draw( sf::RenderTarget & target, sf::RenderStates states ) const override;
+
+            std::set< Model::ADestroyable * > & getEnemies() { return enemies; }
             Model::ADestroyable * getNextEnemy( glm::vec2 pos, double maxDistance );
 
-            View::SFML::TankRenderer * getTankRenderer() { return this->tankRenderer; }
-            void setTankRenderer( View::SFML::TankRenderer * renderer ) { this->tankRenderer = renderer; }
+            View::SFML::EnemyRenderer * getEnemyRenderer() { return this->enemyRenderer; }
+            void setTankRenderer( View::SFML::EnemyRenderer * renderer ) { this->enemyRenderer = renderer; }
+
+            std::set< Model::SolarPlant * > & getSolarPlants() { return solarPlants; }
+            View::SFML::SolarPlantRenderer * getSolarPlantRenderer() { return this->solarPlantRenderer; }
+
+            std::set< Model::Phaser * > & getPhasers() { return phasers; }
+            View::SFML::PhaserRenderer * getPhaserRenderer() { return this->phaserRenderer; }
+
+            std::set< Model::Hub * > & getHubs() { return hubs; }
+            View::SFML::HubRenderer * getHubRenderer() { return this->hubRenderer; }
+
+            std::set< Model::Net::PulseLink * > & getLinks() { return links; }
+            View::SFML::PulseLinkRenderer * getPulseLinkRenderer() { return this->pulseLinkRenderer; }
+
+            std::set< Model::AField2D * > & getFields() { return fields; }
+            View::SFML::FieldRenderer * getFieldRenderer() { return this->fieldRenderer; }
+            Model::AField2D * getFieldAt( const glm::vec2 & pos );
+            std::set< Model::AField2D * > & getNextFieldsTo( Model::AField2D * field, const int level );
         private:
             SceneManager();
             SceneManager( const SceneManager & ) {}
@@ -50,8 +74,18 @@ namespace View
             static SceneManager * _instance;
 
             std::set< Model::ADestroyable * > enemies;
+            std::set< Model::SolarPlant * > solarPlants;
+            std::set< Model::Phaser * > phasers;
+            std::set< Model::Hub * > hubs;
+            std::set< Model::Net::PulseLink * > links;
+            std::set< Model::AField2D * > fields;
 
-            View::SFML::TankRenderer * tankRenderer;
+            View::SFML::EnemyRenderer * enemyRenderer;
+            View::SFML::SolarPlantRenderer * solarPlantRenderer;
+            View::SFML::PhaserRenderer * phaserRenderer;
+            View::SFML::HubRenderer * hubRenderer;
+            View::SFML::PulseLinkRenderer * pulseLinkRenderer;
+            View::SFML::FieldRenderer * fieldRenderer;
         };
     }
 }

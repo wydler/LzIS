@@ -12,14 +12,13 @@ namespace View
 {
 	namespace SFML
 	{
-		class PhaserRenderer : public AUnorderedRenderer< Model::Phaser >
+        class PhaserRenderer : public AUnorderedRenderer< Model::Phaser >, public sf::Drawable
 		{
 		public:
-			PhaserRenderer( sf::RenderWindow & window ) : window(window) {}
+            PhaserRenderer() {}
 			virtual ~PhaserRenderer() {}
-			virtual void draw() const override;
+            virtual void draw( sf::RenderTarget & target, sf::RenderStates states ) const override;
 		private:
-			sf::RenderWindow & window;
 		};
 	}
 }

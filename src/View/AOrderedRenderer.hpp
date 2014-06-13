@@ -10,7 +10,7 @@
 namespace View
 {
 	template< typename T >
-	class AOrderedRenderer : public ADrawable
+    class AOrderedRenderer
 	{
 	public:
 

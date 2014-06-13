@@ -6,7 +6,7 @@
 using namespace View::SFML;
 
 
-void PulseLinkRenderer::draw() const
+void PulseLinkRenderer::draw( sf::RenderTarget & target, sf::RenderStates states ) const
 {
 	sf::Texture tex;
 	tex.loadFromFile( "../assets/images/link.png" );
@@ -27,7 +27,7 @@ void PulseLinkRenderer::draw() const
 			sf::Vertex(sf::Vector2f( from.x, from.y ), m->pulse?sf::Color( 128, 0, 255 ):sf::Color( 128, 0, 255, 64 ) ),
 			sf::Vertex(sf::Vector2f( to.x, to.y ), m->pulse?sf::Color( 64, 0, 255 ):sf::Color( 64, 0, 255, 64 ) )
 		};
-		this->window.draw( line, 2, sf::Lines );
+        target.draw( line, 2, sf::Lines, states );
 
 		glm::vec2 diff = to - from;
 
@@ -41,6 +41,6 @@ void PulseLinkRenderer::draw() const
 		x = (x > 0 ? x : (2*M_PI + x)) * 360 / (2*M_PI);
 		shape.setRotation( x+45 );
 		//shape.setTexture( &tex );
-		this->window.draw( shape );
+        target.draw( shape, states );
 	}
 }

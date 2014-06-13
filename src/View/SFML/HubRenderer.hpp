@@ -12,14 +12,13 @@ namespace View
 {
     namespace SFML
     {
-        class HubRenderer : public AUnorderedRenderer< Model::Hub >
+        class HubRenderer : public AUnorderedRenderer< Model::Hub >, public sf::Drawable
         {
         public:
-            HubRenderer( sf::RenderWindow & window ) : window(window) {}
+            HubRenderer() {}
             virtual ~HubRenderer() {}
-            virtual void draw() const override;
+            virtual void draw( sf::RenderTarget & target, sf::RenderStates states ) const override;
         private:
-            sf::RenderWindow & window;
         };
     }
 }

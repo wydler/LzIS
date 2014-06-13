@@ -12,14 +12,14 @@ namespace View
 {
 	namespace SFML
 	{
-		class SolarPlantRenderer : public AUnorderedRenderer< Model::SolarPlant >
+        class SolarPlantRenderer : public AUnorderedRenderer< Model::SolarPlant >, public sf::Drawable
 		{
 		public:
-			SolarPlantRenderer( sf::RenderWindow & window ) : window(window) {}
+            SolarPlantRenderer() {}
 			virtual ~SolarPlantRenderer() {}
-			virtual void draw() const override;
+
+            virtual void draw( sf::RenderTarget & target, sf::RenderStates states ) const override;
 		private:
-			sf::RenderWindow & window;
 		};
 	}
 }
